@@ -17,7 +17,7 @@ if (isLoginPage) {
         document.getElementById('password').value = passwordParam;
 
         // Check if credentials are valid
-        if (emailParam.includes('@netsurfdirect.com') && passwordParam === 'Invorto2025') {
+        if (emailParam.endsWith('@netsurfdirect.com') && passwordParam === 'Invorto2025') {
             // Auto-submit the form
             loginForm.submit();
         }
@@ -28,7 +28,7 @@ if (isLoginPage) {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
 
-        if (email.includes('@netsurfdirect.com') && password === 'Invorto2025') {
+        if (email.endsWith('@netsurfdirect.com') && password === 'Invorto2025') {
             localStorage.setItem('loggedIn', 'true');
             window.location.href = 'call.html';
         } else {
