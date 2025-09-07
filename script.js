@@ -33,7 +33,7 @@ if (loginForm) {
            }
 
            if (errorMessage) {
-               errorMessage.textContent = 'Invalid email or password. Only @netsurfdirect.com emails are allowed.';
+               errorMessage.textContent = 'Invalid email or password.';
            }
        };
 
