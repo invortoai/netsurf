@@ -1,92 +1,130 @@
-// Check if on login page or call page
-const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname === '/';
-const isCallPage = window.location.pathname.endsWith('call.html');
+/**
+* Page detection is DOM-based to work reliably on GitHub Pages project paths.
+* No logic relies on window.location.pathname.
+*/
 
-if (isLoginPage) {
-    // Login page logic
-    const loginForm = document.getElementById('loginForm');
-    const errorMessage = document.getElementById('errorMessage');
+// Detect pages by presence of key elements
+const loginForm = document.getElementById('loginForm');
+const callForm = document.getElementById('callForm');
 
-    // Auto-login logic
-    const urlParams = new URLSearchParams(window.location.search);
-    const emailParam = urlParams.get('email');
-    const passwordParam = urlParams.get('password');
+// -------------------- Login Page Logic --------------------
+if (loginForm) {
+   const emailInput = document.getElementById('email');
+   const passwordInput = document.getElementById('password');
+   const errorMessage = document.getElementById('errorMessage');
 
-    if (emailParam && passwordParam) {
-        document.getElementById('email').value = emailParam;
-        document.getElementById('password').value = passwordParam;
+   // Defensive: ensure required inputs exist
+   if (!emailInput || !passwordInput) {
+       // Cannot proceed without required inputs
+   } else {
+       // Helper to handle login attempts consistently (manual or auto)
+       const handleLoginAttempt = (emailRaw, passwordRaw) => {
+           const email = (emailRaw || '').trim();
+           const password = (passwordRaw || '').trim();
+           const valid =
+               email.toLowerCase().endsWith('@netsurfdirect.com') &&
+               password === 'Invorto2025';
 
-        // Check if credentials are valid
-        if (emailParam.endsWith('@netsurfdirect.com') && passwordParam === 'Invorto2025') {
-            // Auto-submit the form
-            loginForm.submit();
-        }
-    }
+           if (valid) {
+               localStorage.setItem('loggedIn', 'true');
+               // Relative redirect works on GitHub Pages under /netsurf/
+               window.location.href = 'call.html';
+               return;
+           }
 
-    loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+           if (errorMessage) {
+               errorMessage.textContent = 'Invalid email or password. Only @netsurfdirect.com emails are allowed.';
+           }
+       };
 
-        if (email.endsWith('@netsurfdirect.com') && password === 'Invorto2025') {
-            localStorage.setItem('loggedIn', 'true');
-            window.location.href = 'call.html';
-        } else {
-            errorMessage.textContent = 'Invalid email or password. Only @netsurfdirect.com emails are allowed.';
-        }
-    });
-} else if (isCallPage) {
-    // Check if logged in
-    if (!localStorage.getItem('loggedIn')) {
-        window.location.href = 'index.html';
-    }
+       // Attach submit listener unconditionally
+       loginForm.addEventListener('submit', (e) => {
+           e.preventDefault();
+           handleLoginAttempt(emailInput.value, passwordInput.value);
+       });
 
-    // Call page logic
-    const callForm = document.getElementById('callForm');
-    const messageDiv = document.getElementById('message');
-    const signoutBtn = document.getElementById('signoutBtn');
+       // Auto-login via URL params: ?email=...&password=...
+       try {
+           const urlParams = new URLSearchParams(window.location.search);
+           const emailParam = urlParams.get('email');
+           const passwordParam = urlParams.get('password');
 
-    callForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const phone = document.getElementById('phone').value;
+           if (emailParam && passwordParam) {
+               emailInput.value = emailParam;
+               passwordInput.value = passwordParam;
+               // Run same validation/redirect logic (do NOT call form.submit())
+               handleLoginAttempt(emailParam, passwordParam);
+           }
+       } catch (_) {
+           // Ignore URL parsing issues gracefully
+       }
+   }
+}
 
-        // Additional validation: exactly 10 digits
-        if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
-            messageDiv.textContent = 'Please enter exactly 10 digits.';
-            messageDiv.style.color = 'red';
-            return;
-        }
+// -------------------- Call Page Logic --------------------
+if (callForm) {
+   // Guard: must be logged in
+   if (localStorage.getItem('loggedIn') !== 'true') {
+       window.location.href = 'index.html';
+       // Stop further execution on this page
+   } else {
+       const messageDiv = document.getElementById('message');
+       const signoutBtn = document.getElementById('signoutBtn');
+       const phoneInput = document.getElementById('phone');
 
-        // Send to webhook
-        const payload = {
-            "number": phone,
-            "call_attempted": "No",
-            "PCAP": "netsurf"
-        };
+       // Defensive: ensure form and phone input exist
+       if (callForm && phoneInput) {
+           callForm.addEventListener('submit', function (e) {
+               e.preventDefault();
+               const phone = (phoneInput.value || '').trim();
 
-        fetch('https://n8n.srv743759.hstgr.cloud/webhook/netsurf', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
-        .then(response => {
-            if (response.ok) {
-                messageDiv.textContent = 'Call initiated successfully.';
-                messageDiv.style.color = 'green';
-            } else {
-                throw new Error('Webhook failed');
-            }
-        })
-        .catch(error => {
-            messageDiv.textContent = 'Servers are busy. Please try again later.';
-            messageDiv.style.color = 'red';
-        });
-    });
+               // Additional validation: exactly 10 digits
+               if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+                   if (messageDiv) {
+                       messageDiv.textContent = 'Please enter exactly 10 digits.';
+                       messageDiv.style.color = 'red';
+                   }
+                   return;
+               }
 
-    signoutBtn.addEventListener('click', function() {
-        localStorage.removeItem('loggedIn');
-        window.location.href = 'index.html';
-    });
+               // Send to webhook (unchanged)
+               const payload = {
+                   "number": phone,
+                   "call_attempted": "No",
+                   "PCAP": "netsurf"
+               };
+
+               fetch('https://n8n.srv743759.hstgr.cloud/webhook/netsurf', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body: JSON.stringify(payload)
+               })
+               .then(response => {
+                   if (response.ok) {
+                       if (messageDiv) {
+                           messageDiv.textContent = 'Call initiated successfully.';
+                           messageDiv.style.color = 'green';
+                       }
+                   } else {
+                       throw new Error('Webhook failed');
+                   }
+               })
+               .catch(() => {
+                   if (messageDiv) {
+                       messageDiv.textContent = 'Servers are busy. Please try again later.';
+                       messageDiv.style.color = 'red';
+                   }
+               });
+           });
+       }
+
+       if (signoutBtn) {
+           signoutBtn.addEventListener('click', function () {
+               localStorage.removeItem('loggedIn');
+               window.location.href = 'index.html';
+           });
+       }
+   }
 }
