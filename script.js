@@ -7,6 +7,22 @@ if (isLoginPage) {
     const loginForm = document.getElementById('loginForm');
     const errorMessage = document.getElementById('errorMessage');
 
+    // Auto-login logic
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    const passwordParam = urlParams.get('password');
+
+    if (emailParam && passwordParam) {
+        document.getElementById('email').value = emailParam;
+        document.getElementById('password').value = passwordParam;
+
+        // Check if credentials are valid
+        if (emailParam.includes('@netsurfdirect.com') && passwordParam === 'Invorto2025') {
+            // Auto-submit the form
+            loginForm.submit();
+        }
+    }
+
     loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const email = document.getElementById('email').value;
