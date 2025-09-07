@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Netsurf</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Normalize URL to include trailing slash on GitHub Pages project sites -->
+    <script>
+      (function () {
+        var p = window.location.pathname || '';
+        // If path looks like a directory (no dot and no trailing slash), add a trailing slash
+        if (p && !p.endsWith('/') && !p.includes('.')) {
+          window.location.replace(p + '/' + window.location.search + window.location.hash);
+        }
+      })();
+    </script>
 </head>
 <body>
     <div class="container">
