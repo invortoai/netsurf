@@ -135,7 +135,9 @@ if (callForm) {
        }
 
        if (signoutBtn) {
-           signoutBtn.addEventListener('click', function () {
+           signoutBtn.addEventListener('click', function (e) {
+               // Prevent the surrounding form from submitting
+               if (e && typeof e.preventDefault === 'function') e.preventDefault();
                localStorage.removeItem('loggedIn');
                // Use replace so protected page isn't kept in history
                window.location.replace('index.html');
