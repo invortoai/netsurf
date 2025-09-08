@@ -72,6 +72,20 @@ if (callForm) {
        const signoutBtn = document.getElementById('signoutBtn');
        const phoneInput = document.getElementById('phone');
 
+       // Hardened auth checks to defeat back/forward cache
+       const ensureAuth = () => {
+           if (localStorage.getItem('loggedIn') !== 'true') {
+               window.location.replace('index.html');
+           }
+       };
+       // Keep URL stable without adding new history entries
+       try { history.replaceState(null, '', 'call.html'); } catch (e) {}
+       // Re-run auth check when page is restored or becomes visible
+       window.addEventListener('pageshow', ensureAuth);
+       document.addEventListener('visibilitychange', () => {
+           if (document.visibilityState === 'visible') ensureAuth();
+       });
+
        // Defensive: ensure form and phone input exist
        if (callForm && phoneInput) {
            callForm.addEventListener('submit', function (e) {
@@ -121,9 +135,12 @@ if (callForm) {
        }
 
        if (signoutBtn) {
-           signoutBtn.addEventListener('click', function () {
+           signoutBtn.addEventListener('click', function (e) {
+               // Prevent the surrounding form from submitting
+               if (e && typeof e.preventDefault === 'function') e.preventDefault();
                localStorage.removeItem('loggedIn');
-               window.location.href = 'index.html';
+               // Use replace so protected page isn't kept in history
+               window.location.replace('index.html');
            });
        }
    }
